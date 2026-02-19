@@ -11,7 +11,7 @@ Track time spent on work items and generate comprehensive reports with full audi
 
 ### Time Entry on Work Items
 - Add time entries directly from any work item using the "Time Tracking" tab
-- Quick-add buttons: +30m, +1h, +2h, +4h for fast time logging
+- Quick-add buttons: +30m, +1h, +3h, +6h, +8 for fast time logging
 - Configurable time increments (15 min, 30 min, or 1 hour)
 - Add notes/descriptions for each time entry
 - Simple, compact form that opens directly when you click Time Tracking
@@ -51,15 +51,6 @@ Track time spent on work items and generate comprehensive reports with full audi
 
 ## Version History
 
-### v1.2.0
-- Added "Time Logged" summary displayed on work item form
-- Added audit trail with full change history
-- Added notes/description field for time entries
-- Simplified time entry form - opens directly without extra clicks
-
-### v1.1.0
-- Compact redesigned UI
-- PNG icons for better compatibility
 
 ### v1.0.0
 - Initial release with time tracking and reports
