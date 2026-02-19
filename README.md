@@ -155,6 +155,13 @@ The extension requires the following scopes:
 3. View charts and summary statistics
 4. Export to CSV if needed
 
+<img width="852" height="691" alt="image" src="https://github.com/user-attachments/assets/21fd28d5-81ff-4415-9392-f7dc02dd5212" />
+
+<img width="1089" height="551" alt="image" src="https://github.com/user-attachments/assets/df7fd06a-d7aa-430c-af17-8207ce42baa9" />
+
+<img width="1530" height="912" alt="image" src="https://github.com/user-attachments/assets/c138666b-ef08-468d-b488-48b3bb9dfb43" />
+
+
 ## Troubleshooting
 
 ### Extension not appearing
