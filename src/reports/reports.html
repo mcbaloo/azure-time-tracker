@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Reports</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <style>
+        body {
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .filters-card {
+            background: var(--background-hover);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .filters-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary-color);
+            line-height: 1;
+        }
+
+        .summary-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .chart-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .results-count {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .work-item-link {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .work-item-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .date-range-preset {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .preset-btn {
+            padding: 4px 12px;
+            font-size: 12px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .preset-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading State -->
+    <div id="loadingState" class="loading">
+        <div class="spinner"></div>
+        <span>Loading reports...</span>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="hidden">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Time Reports</h1>
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="refreshBtn" onclick="refreshData()">
+                    🔄 Refresh
+                </button>
+                <button class="btn btn-primary" id="exportBtn" onclick="exportToCSV()">
+                    📥 Export CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-card">
+            <div class="filters-title">FILTERS</div>
+            
+            <!-- Date Range Presets -->
+            <div class="date-range-preset">
+                <button class="preset-btn" data-range="today">Today</button>
+                <button class="preset-btn" data-range="week">This Week</button>
+                <button class="preset-btn active" data-range="month">This Month</button>
+                <button class="preset-btn" data-range="quarter">This Quarter</button>
+                <button class="preset-btn" data-range="year">This Year</button>
+                <button class="preset-btn" data-range="all">All Time</button>
+            </div>
+
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label for="filterStartDate">Start Date</label>
+                    <input type="date" id="filterStartDate" class="form-control">
+                </div>
+                <div class="filter-group">
+                    <label for="filterEndDate">End Date</label>
+                    <input type="date" id="filterEndDate" class="form-control">
+                </div>
+                <div class="filter-group">
+                    <label for="filterUser">Assigned To</label>
+                    <select id="filterUser" class="form-control">
+                        <option value="">All Users</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterWorkItemType">Work Item Type</label>
+                    <select id="filterWorkItemType" class="form-control">
+                        <option value="">All Types</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+                <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-value" id="totalHours">0</div>
+                <div class="summary-label">Total Hours</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="totalEntries">0</div>
+                <div class="summary-label">Time Entries</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="avgHoursPerDay">0</div>
+                <div class="summary-label">Avg Hours/Item</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="uniqueWorkItems">0</div>
+                <div class="summary-label">Work Items</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3 class="chart-title">Hours by User</h3>
+                <div id="chartByUser" class="bar-chart">
+                    <!-- Chart will be rendered here -->
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3 class="chart-title">Hours by Work Item Type</h3>
+                <div id="chartByType" class="bar-chart">
+                    <!-- Chart will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Results -->
+        <div class="card">
+            <div class="results-header">
+                <h3 class="card-title">Time Entries</h3>
+                <span class="results-count" id="resultsCount">0 entries</span>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state hidden">
+                <div class="empty-state-icon">📊</div>
+                <div class="empty-state-title">No time entries found</div>
+                <p>Try adjusting your filters or add time entries to work items.</p>
+            </div>
+
+            <!-- Results Table -->
+            <div id="resultsTable" class="table-container hidden">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Work Item</th>
+                            <th>Type</th>
+                            <th>Hours</th>
+                            <th>User</th>
+                            <th>Description</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <!-- Results will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden">
+        <div class="message message-error">
+            <strong>Error:</strong> <span id="errorMessage"></span>
+        </div>
+        <button class="btn btn-secondary" onclick="location.reload()">Retry</button>
+    </div>
+
+    <script type="module" src="./reports.js"></script>
+</body>
+</html>

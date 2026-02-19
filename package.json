@@ -1,0 +1,36 @@
+{
+  "name": "azure-time-tracker",
+  "version": "1.2.0",
+  "description": "Azure DevOps extension for time tracking and reporting on work items",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "webpack",
+    "build:dev": "webpack --mode development",
+    "package": "tfx extension create --manifest-globs vss-extension.json --output-path ./dist",
+    "dev": "npm run build && npm run package",
+    "clean": "rimraf dist"
+  },
+  "keywords": [
+    "azure-devops",
+    "extension",
+    "time-tracking",
+    "reporting"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "azure-devops-extension-api": "^4.237.0",
+    "azure-devops-extension-sdk": "^4.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "copy-webpack-plugin": "^13.0.1",
+    "copyfiles": "^2.4.1",
+    "rimraf": "^5.0.5",
+    "tfx-cli": "^0.16.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.3.2",
+    "webpack": "^5.105.2",
+    "webpack-cli": "^6.0.1"
+  }
+}

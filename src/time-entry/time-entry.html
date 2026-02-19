@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Tracking</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <style>
+        body {
+            padding: 12px 16px;
+            font-size: 13px;
+            max-width: 600px;
+        }
+
+        .section {
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-title .icon {
+            font-size: 14px;
+        }
+
+        /* Time Input Section */
+        .time-section {
+          background: linear-gradient(135deg, #000 0%, #106ebe 100%);
+            padding: 12px 16px;
+            border-radius: 6px;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .time-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .time-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .current-time {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .time-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .time-input-group {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.15);
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        .time-input-group input {
+            width: 60px;
+            border: none;
+            background: transparent;
+            color: white;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 6px;
+        }
+
+        .time-input-group input:focus {
+            outline: none;
+        }
+
+        .time-input-group input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .spin-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spin-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .quick-btns {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .q-btn {
+            padding: 5px 10px;
+            font-size: 12px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 14px;
+            cursor: pointer;
+            color: white;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .q-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .q-btn.reset {
+            background: rgba(255,100,100,0.3);
+            border-color: rgba(255,100,100,0.5);
+        }
+
+        .q-btn.reset:hover {
+            background: rgba(255,100,100,0.5);
+        }
+
+        /* Comment Section */
+        .comment-section {
+            background: var(--background-hover);
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+
+        .comment-input-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .comment-input {
+            flex: 1;
+            min-height: 40px;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 13px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: #0078d4;
+        }
+
+        .add-comment-btn {
+            padding: 12px 20px;
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .add-comment-btn:hover {
+            background: #106ebe;
+        }
+
+        /* History Section */
+        .history-section {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .history-header {
+            background: var(--background-hover);
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--background-hover);
+            display: flex;
+            gap: 12px;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #0078d4;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .history-avatar.created {
+            background: #107c10;
+        }
+
+        .history-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+
+        .history-user {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .history-action {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .history-hours {
+            background: #e6f2ff;
+            color: #0078d4;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .history-time {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-left: auto;
+        }
+
+        .history-notes {
+            color: var(--text-color);
+            font-size: 13px;
+            margin-top: 6px;
+            padding: 8px 12px;
+            background: var(--background-hover);
+            border-radius: 6px;
+            border-left: 3px solid #0078d4;
+        }
+
+        .no-history {
+            padding: 24px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Action Row */
+        .action-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .save-btn {
+            padding: 8px 24px;
+            font-size: 13px;
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .save-btn:hover {
+            background: #106ebe;
+        }
+
+        .save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .last-saved {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Settings */
+        .settings-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 16px;
+            background: var(--background-hover);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .settings-row label {
+            color: var(--text-secondary);
+        }
+
+        .settings-row select {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        /* Loading */
+        .loading {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading State -->
+    <div id="loadingState" class="loading">
+        Loading time tracking...
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="hidden">
+        <!-- Time Input Section -->
+        <div class="time-section">
+            <div class="time-header">
+                <div>
+                    <div class="time-label">Total Time Logged</div>
+                    <div class="current-time"><span id="currentHours">0</span> hours</div>
+                </div>
+            </div>
+            <div class="time-controls">
+                <div class="time-input-group">
+                    <button class="spin-btn" onclick="decrementHours()">−</button>
+                    <input type="number" id="hoursInput" min="0" max="1000" step="0.5" value="0" placeholder="0">
+                    <button class="spin-btn" onclick="incrementHours()">+</button>
+                </div>
+                <div class="quick-btns">
+                    <button class="q-btn" onclick="addHours(0.5)">+30 min</button>
+                    <button class="q-btn" onclick="addHours(1)">+1 hour</button>
+                    <button class="q-btn" onclick="addHours(3)">+3 hours</button>
+                    <button class="q-btn" onclick="addHours(6)">+6 hours</button>
+                    <button class="q-btn" onclick="addHours(8)">+8 hours</button>
+                    <button class="q-btn reset" onclick="setHours(0)">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comment Section -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">💬</span>
+                Add a Comment
+            </div>
+            <div class="comment-section">
+                <div class="comment-input-row">
+                    <textarea id="commentInput" class="comment-input" placeholder="Add a comment about your work (optional)..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Row -->
+        <div class="action-row">
+            <button class="save-btn" id="saveBtn" onclick="saveTime()">Save Time</button>
+            <span id="lastSaved" class="last-saved hidden">
+                Last saved: <span id="lastSavedTime"></span>
+            </span>
+        </div>
+
+        <!-- History Section -->
+        <div class="section">
+            <div class="history-section">
+                <div class="history-header">
+                    <span>📋</span>
+                    Activity History
+                </div>
+                <div id="historyList" class="history-list">
+                    <div class="no-history">No activity yet</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="section">
+            <div class="settings-row">
+                <label>⚙️ Time increment:</label>
+                <select id="incrementSelect" onchange="updateIncrement()">
+                    <option value="0.25">15 minutes</option>
+                    <option value="0.5" selected>30 minutes</option>
+                    <option value="1">1 hour</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden">
+        <div style="color: #d13438; padding: 20px; text-align: center;">
+            <div style="font-size: 16px; margin-bottom: 12px;">Error loading time tracking</div>
+            <div id="errorMessage" style="font-size: 13px; margin-bottom: 16px;"></div>
+            <button class="save-btn" onclick="location.reload()">Retry</button>
+        </div>
+    </div>
+
+    <script type="module" src="./time-entry.js"></script>
+</body>
+</html>

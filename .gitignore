@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Extension packages
+*.vsix
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage
+coverage/
+
+# Webpack
+webpack-stats.json
+
+# npm
+package-lock.json
+
+# Ignore local test files
+local.test.js
+local.test.ts
+
+# Ignore by extension
+*.swp
+*.swo
+
+# Ignore extension packaging
+*.tgz
+
+# Ignore temporary files
+~$*
+*.tmp
+*.bak
+
+# Ignore Azure DevOps artifacts
+.azure/
