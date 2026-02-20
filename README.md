@@ -1,3 +1,5 @@
+[![Install from Visual Studio Marketplace](https://img.shields.io/badge/Install%20on%20Marketplace-azure--devops--time--tracker--extension-blue?logo=visual-studio&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=mcbaloo-apps.azure-devops-time-tracker-extension)
+
 # Azure DevOps Time Tracker Extension
 
 A Visual Studio Marketplace extension for Azure DevOps that enables time tracking on work items and generates comprehensive reports.
