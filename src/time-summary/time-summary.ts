@@ -62,8 +62,8 @@ async function loadTimeSummary(workItemId: number): Promise<void> {
             return;
         }
 
-        // Calculate total hours
-        const totalHours = entries.reduce((sum, e) => sum + (e.hours || 0), 0);
+        // Calculate total hours (sum all logs in each entry)
+        const totalHours = entries.reduce((sum, e) => sum + (e.logs ? e.logs.reduce((s, l) => s + l.hours, 0) : 0), 0);
         
         if (totalHours === 0) {
             noTime.style.display = "flex";

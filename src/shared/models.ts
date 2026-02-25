@@ -9,13 +9,21 @@ export interface TimeEntry {
     workItemType?: string;
     projectId: string;
     projectName?: string;
-    hours: number;
+    logs: TimeLog[]; // Array of daily logs
     description: string;
     userId: string;
     userName?: string;
     createdAt: string;
     updatedAt: string;
     auditLog: AuditLogEntry[];
+}
+
+/**
+ * Represents a single log of hours for a specific date
+ */
+export interface TimeLog {
+    date: string; // YYYY-MM-DD
+    hours: number;
 }
 
 /**

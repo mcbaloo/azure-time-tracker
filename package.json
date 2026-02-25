@@ -6,9 +6,11 @@
   "scripts": {
     "build": "webpack",
     "build:dev": "webpack --mode development",
-    "package": "tfx extension create --manifest-globs vss-extension.json --output-path ./dist",
-    "dev": "npm run build && npm run package",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "package:dev": "tfx extension create --manifest-globs vss-extension.json --overrides-file vss-extension-dev.json --output-path ./dist",
+    "package:prod": "tfx extension create --manifest-globs vss-extension.json --rev-version --output-path ./dist",
+    "dev": "npm run clean && npm run build:dev && npm run package:dev",
+    "release": "npm run clean && npm run build && npm run package:prod"
   },
   "keywords": [
     "azure-devops",
@@ -31,6 +33,7 @@
     "ts-loader": "^9.5.4",
     "typescript": "^5.3.2",
     "webpack": "^5.105.2",
-    "webpack-cli": "^6.0.1"
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.3"
   }
 }

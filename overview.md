@@ -16,6 +16,12 @@ Track time spent on work items and generate comprehensive reports with full audi
 - Add notes/descriptions for each time entry
 - Simple, compact form that opens directly when you click Time Tracking
 
+#### Daily Logging & Update Flow
+- Log time per-day for a specific work item — each day's hours are tracked separately.
+- When a user opens the Time Tracking tab, the input defaults to today's logged hours (if any) and the action button toggles between **Add Time** and **Update Time** depending on whether a daily entry already exists.
+- All daily logs are visible in the "Daily Time Log" section on the work item for quick review.
+- Saving or updating a daily log records an audit entry (previous → new hours) and notifies other open tabs so reports and work-item views refresh automatically.
+
 ### Audit Trail & History
 - **Full audit log**: Track who updated time and when
 - View change history showing previous hours → new hours
@@ -29,6 +35,11 @@ Track time spent on work items and generate comprehensive reports with full audi
 - Summary cards with total hours, entries count, and averages
 - Export reports to CSV for external analysis
 - Detailed table with all time entries
+
+#### New: Work Item ID Search
+- Reports now support filtering by **Work Item ID** so you can quickly find all daily logs and audit history for a specific work item.
+- Enter a work item ID in the report filters to scope charts and tables to that item.
+- This search works in combination with existing filters (date range, user, project).
 
 ## Getting Started
 
@@ -44,6 +55,11 @@ Track time spent on work items and generate comprehensive reports with full audi
 - All changes are tracked in an audit log with timestamps and user information
 - Reports aggregate time across all users for comprehensive project tracking
 
+Implementation notes:
+- Daily logs are represented as an array of `{ date: string, hours: number }` on each user's TimeEntry record for a work item.
+- The extension uses BroadcastChannel (with a localStorage fallback) to notify other open tabs when a time entry is created/updated; listeners reload data accordingly.
+- The reports page accepts an optional `workItemId` filter and queries aggregated entries by that ID for fast lookups.
+
 ## Permissions Required
 
 - **Work Items (Read)**: To read work item information
@@ -54,6 +70,8 @@ Track time spent on work items and generate comprehensive reports with full audi
 
 ### v1.0.0
 - Initial release with time tracking and reports
+### v2.0.2
+- Add Daily time log for work items. Users can now log time daily on a single ticket to report daily time spent.
 
 ## Support
 

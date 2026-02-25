@@ -76,7 +76,13 @@ export class TimeEntryService {
      * @param entry The time entry data
      * @param comment Optional comment for the audit log (separate from description)
      */
-    async setTimeEntry(entry: Omit<TimeEntry, "id" | "createdAt" | "updatedAt" | "auditLog">, comment?: string): Promise<TimeEntry> {
+    /**
+     * Set or update time entry for a work item (append daily log)
+     * Each user can have one time entry per work item, but multiple logs per day
+     * @param entry The time entry data (must include logs: TimeLog[])
+     * @param comment Optional comment for the audit log (separate from description)
+     */
+    async setTimeEntry(entry: Omit<TimeEntry, "id" | "createdAt" | "updatedAt" | "auditLog"> & { hours: number, date: string }, comment?: string): Promise<TimeEntry> {
         const dataManager = await this.getDataManager();
         const id = this.generateId(entry.workItemId, entry.userId);
         const now = new Date().toISOString();
@@ -84,32 +90,44 @@ export class TimeEntryService {
         // Check if entry exists
         const existingEntry = await this.getTimeEntry(id);
 
-        // Create audit log entry - use comment parameter for notes, not description
+        let logs = existingEntry?.logs ? [...existingEntry.logs] : [];
+        // Find if there's already a log for this date
+        const logIdx = logs.findIndex(l => l.date === entry.date);
+        let previousHours = 0;
+        if (logIdx >= 0) {
+            previousHours = logs[logIdx].hours;
+            logs[logIdx].hours = entry.hours; // Overwrite today's log
+        } else {
+            logs.push({ date: entry.date, hours: entry.hours });
+        }
+
+        // Create audit log entry
         const auditEntry: AuditLogEntry = {
             timestamp: now,
             userId: entry.userId,
             userName: entry.userName || entry.userId,
             action: existingEntry ? 'updated' : 'created',
-            previousHours: existingEntry?.hours,
-            newHours: entry.hours,
-            notes: comment || undefined // Only add notes if a comment was provided
+            previousHours: previousHours,
+            newHours: (logIdx >= 0 ? logs[logIdx].hours : entry.hours),
+            notes: comment || undefined
         };
 
         // Preserve existing audit log and add new entry
         const auditLog = existingEntry?.auditLog || [];
         auditLog.push(auditEntry);
 
-        // Preserve __etag for optimistic concurrency (fixes document version mismatch)
+        // Preserve __etag for optimistic concurrency
         const existingEtag = existingEntry ? (existingEntry as any).__etag : undefined;
-        
+
         const timeEntry: TimeEntry & { __etag?: number } = {
             ...entry,
+            logs,
             id,
             createdAt: existingEntry?.createdAt || now,
             updatedAt: now,
             auditLog
         };
-        
+
         // Include __etag if updating existing document
         if (existingEtag !== undefined) {
             timeEntry.__etag = existingEtag;
@@ -133,7 +151,18 @@ export class TimeEntryService {
     async getTimeEntry(id: string): Promise<TimeEntry | null> {
         const dataManager = await this.getDataManager();
         try {
-            return await dataManager.getDocument(COLLECTION_NAME, id);
+            const doc = await dataManager.getDocument(COLLECTION_NAME, id) as any;
+            if (!doc) return null;
+            // Backwards-compat: if legacy `hours` field exists but no `logs`, synthesize logs array for runtime
+            if ((!doc.logs || !Array.isArray(doc.logs)) && (doc.hours !== undefined && doc.hours !== null)) {
+                const dateSrc = (doc.updatedAt || doc.createdAt || new Date().toISOString()).slice(0, 10);
+                doc.logs = [{ date: dateSrc, hours: Number(doc.hours) || 0 }];
+            }
+            // Normalize workItemId to number to avoid type mismatches when filtering
+            if (doc.workItemId !== undefined && doc.workItemId !== null) {
+                doc.workItemId = Number(doc.workItemId);
+            }
+            return doc as TimeEntry;
         } catch {
             return null;
         }
@@ -152,7 +181,7 @@ export class TimeEntryService {
      */
     async getTotalHoursForWorkItem(workItemId: number): Promise<number> {
         const entries = await this.getTimeEntriesForWorkItem(workItemId);
-        return entries.reduce((sum, entry) => sum + entry.hours, 0);
+        return entries.reduce((sum, entry) => sum + (entry.logs ? entry.logs.reduce((s, l) => s + l.hours, 0) : 0), 0);
     }
 
     /**
@@ -169,8 +198,20 @@ export class TimeEntryService {
     async getAllTimeEntries(): Promise<TimeEntry[]> {
         const dataManager = await this.getDataManager();
         try {
-            const documents = await dataManager.getDocuments(COLLECTION_NAME);
-            return documents as TimeEntry[];
+            const documents = await dataManager.getDocuments(COLLECTION_NAME) as any[];
+            if (!documents || documents.length === 0) return [];
+            // Backwards-compat: synthesize `logs` for documents that still have legacy `hours` field
+            return documents.map(doc => {
+                if ((!doc.logs || !Array.isArray(doc.logs)) && (doc.hours !== undefined && doc.hours !== null)) {
+                    const dateSrc = (doc.updatedAt || doc.createdAt || new Date().toISOString()).slice(0, 10);
+                    doc.logs = [{ date: dateSrc, hours: Number(doc.hours) || 0 }];
+                }
+                // Normalize numeric fields to expected types
+                if (doc.workItemId !== undefined && doc.workItemId !== null) {
+                    doc.workItemId = Number(doc.workItemId);
+                }
+                return doc as TimeEntry;
+            });
         } catch {
             return [];
         }
@@ -225,24 +266,26 @@ export class TimeEntryService {
         const workItemMap = new Map<number, { title: string; hours: number }>();
 
         for (const entry of entries) {
-            summary.totalHours += entry.hours;
+            summary.totalHours += entry.logs ? entry.logs.reduce((s, l) => s + l.hours, 0) : 0;
 
             // By user
             const userName = entry.userName || entry.userId;
-            summary.byUser[userName] = (summary.byUser[userName] || 0) + entry.hours;
+            summary.byUser[userName] = (summary.byUser[userName] || 0) + (entry.logs ? entry.logs.reduce((s, l) => s + l.hours, 0) : 0);
 
             // By work item type
             const workItemType = entry.workItemType || "Unknown";
-            summary.byWorkItemType[workItemType] = (summary.byWorkItemType[workItemType] || 0) + entry.hours;
+            summary.byWorkItemType[workItemType] = (summary.byWorkItemType[workItemType] || 0) + (entry.logs ? entry.logs.reduce((s, l) => s + l.hours, 0) : 0);
 
             // By work item
             const existing = workItemMap.get(entry.workItemId);
             if (existing) {
-                existing.hours += entry.hours;
+                if (entry.logs) {
+                    existing.hours += entry.logs.reduce((s, l) => s + l.hours, 0);
+                }
             } else {
                 workItemMap.set(entry.workItemId, {
                     title: entry.workItemTitle || `Work Item #${entry.workItemId}`,
-                    hours: entry.hours
+                    hours: entry.logs ? entry.logs.reduce((s, l) => s + l.hours, 0) : 0
                 });
             }
         }
@@ -265,7 +308,7 @@ export class TimeEntryService {
             entry.workItemId.toString(),
             `"${(entry.workItemTitle || "").replace(/"/g, '""')}"`,
             entry.workItemType || "",
-            entry.hours.toString(),
+            (entry.logs ? entry.logs.reduce((s, l) => s + l.hours, 0) : 0).toString(),
             entry.userName || entry.userId,
             `"${(entry.description || "").replace(/"/g, '""')}"`,
             entry.updatedAt
