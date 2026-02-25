@@ -1,7 +1,7 @@
 {
   "manifestVersion": 1,
   "id": "azure-devops-time-tracker-extension",
-  "version": "2.0.8",
+  "version": "2.0.10",
   "name": "Time Tracker Logger",
   "public": true,
   "description": "Track and log time spent on work items and generate detailed reports",

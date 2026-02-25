@@ -8,6 +8,7 @@ import {
   TimeEntry,
   TimeTrackerSettings,
   AuditLogEntry,
+  TimeLog,
 } from "../shared/models";
 
 // DOM Elements
@@ -34,7 +35,7 @@ let currentWorkItemType: string;
 
 // Current time entry (if exists)
 let currentEntry: TimeEntry | null = null;
-
+let currentEntryTimeLog: TimeLog[] = [];
 // Settings
 let settings: TimeTrackerSettings = { hourIncrement: 0.5 };
 
@@ -122,6 +123,7 @@ async function loadTimeEntry(): Promise<void> {
 
  
     currentEntry = entries.find((e) => String(e.userId) === String(currentUserId)) || null;
+    
     let today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
     const todayDateEl = document.getElementById("todayDate");
@@ -136,6 +138,7 @@ async function loadTimeEntry(): Promise<void> {
     }
     
     const allLogsRaw = entries.flatMap((e) => e.logs || []);
+    currentEntryTimeLog = allLogsRaw;
     const normalizeDate = (d: string) => {
       try {
         return new Date(d).toISOString().slice(0, 10);
@@ -168,7 +171,7 @@ async function loadTimeEntry(): Promise<void> {
       totalLarge.textContent =
         (todayHours > 0 ? todayHours.toString() : totalHours.toString()) || "0";
 
-    const todayAggregatedHours = aggMap[today] || 0;
+    const todayAggregatedHours = todayHours || 0;
     hoursInput.value = todayAggregatedHours.toString();
     if (saveBtn) saveBtn.textContent = todayAggregatedHours > 0 ? "Update Time" : "Add Time";
     hoursInput.disabled = false;
@@ -206,7 +209,7 @@ async function loadTimeEntry(): Promise<void> {
 function ensureSaveBtnAndInput(): void {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    const allLogs = currentEntry?.logs || [];
+    const allLogs = currentEntryTimeLog || [];
     const normalizeDate = (d: string) => {
       try {
         return new Date(d).toISOString().slice(0, 10);
