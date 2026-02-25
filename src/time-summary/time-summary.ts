@@ -29,21 +29,18 @@ async function init(): Promise<void> {
             WorkItemTrackingServiceIds.WorkItemFormService
         );
 
-        // Get work item ID
+       
         const workItemId = await workItemFormService.getId();
 
-        // Load time entries for this work item
         await loadTimeSummary(workItemId);
 
-        // Hide loading
+
         loadingState.style.display = "none";
 
-        // Notify SDK that we're ready
         SDK.notifyLoadSucceeded();
 
     } catch (error) {
         console.error("Initialization error:", error);
-        // Show no time state on error
         if (loadingState) loadingState.style.display = "none";
         if (noTime) noTime.style.display = "flex";
         SDK.notifyLoadSucceeded();
@@ -62,7 +59,6 @@ async function loadTimeSummary(workItemId: number): Promise<void> {
             return;
         }
 
-        // Calculate total hours (sum all logs in each entry)
         const totalHours = entries.reduce((sum, e) => sum + (e.logs ? e.logs.reduce((s, l) => s + l.hours, 0) : 0), 0);
         
         if (totalHours === 0) {
@@ -70,10 +66,8 @@ async function loadTimeSummary(workItemId: number): Promise<void> {
             return;
         }
         
-        // Get unique contributors
         const uniqueUsers = new Set(entries.map(e => e.userName || e.userId));
         
-        // Display
         timeValue.textContent = `${totalHours}h`;
         
         if (uniqueUsers.size > 1) {

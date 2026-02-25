@@ -87,21 +87,20 @@ export class TimeEntryService {
         const id = this.generateId(entry.workItemId, entry.userId);
         const now = new Date().toISOString();
 
-        // Check if entry exists
+       
         const existingEntry = await this.getTimeEntry(id);
 
         let logs = existingEntry?.logs ? [...existingEntry.logs] : [];
-        // Find if there's already a log for this date
+        
         const logIdx = logs.findIndex(l => l.date === entry.date);
         let previousHours = 0;
         if (logIdx >= 0) {
             previousHours = logs[logIdx].hours;
-            logs[logIdx].hours = entry.hours; // Overwrite today's log
+            logs[logIdx].hours = entry.hours; 
         } else {
             logs.push({ date: entry.date, hours: entry.hours });
         }
 
-        // Create audit log entry
         const auditEntry: AuditLogEntry = {
             timestamp: now,
             userId: entry.userId,
@@ -112,11 +111,9 @@ export class TimeEntryService {
             notes: comment || undefined
         };
 
-        // Preserve existing audit log and add new entry
         const auditLog = existingEntry?.auditLog || [];
         auditLog.push(auditEntry);
 
-        // Preserve __etag for optimistic concurrency
         const existingEtag = existingEntry ? (existingEntry as any).__etag : undefined;
 
         const timeEntry: TimeEntry & { __etag?: number } = {
@@ -128,7 +125,6 @@ export class TimeEntryService {
             auditLog
         };
 
-        // Include __etag if updating existing document
         if (existingEtag !== undefined) {
             timeEntry.__etag = existingEtag;
         }
@@ -153,12 +149,20 @@ export class TimeEntryService {
         try {
             const doc = await dataManager.getDocument(COLLECTION_NAME, id) as any;
             if (!doc) return null;
-            // Backwards-compat: if legacy `hours` field exists but no `logs`, synthesize logs array for runtime
+           
             if ((!doc.logs || !Array.isArray(doc.logs)) && (doc.hours !== undefined && doc.hours !== null)) {
-                const dateSrc = (doc.updatedAt || doc.createdAt || new Date().toISOString()).slice(0, 10);
+               
+                let dateSrc = (doc.updatedAt || doc.createdAt || new Date().toISOString()).slice(0, 10);
+                try {
+                    if (doc.auditLog && Array.isArray(doc.auditLog) && doc.auditLog.length > 0) {
+                        const lastAudit = doc.auditLog[doc.auditLog.length - 1];
+                        if (lastAudit && lastAudit.timestamp) {
+                            dateSrc = new Date(lastAudit.timestamp).toISOString().slice(0, 10);
+                        }
+                    }
+                } catch { }
                 doc.logs = [{ date: dateSrc, hours: Number(doc.hours) || 0 }];
             }
-            // Normalize workItemId to number to avoid type mismatches when filtering
             if (doc.workItemId !== undefined && doc.workItemId !== null) {
                 doc.workItemId = Number(doc.workItemId);
             }
@@ -173,7 +177,22 @@ export class TimeEntryService {
      */
     async getTimeEntryForWorkItem(workItemId: number, userId: string): Promise<TimeEntry | null> {
         const id = this.generateId(workItemId, userId);
-        return this.getTimeEntry(id);
+        const direct = await this.getTimeEntry(id);
+        if (direct) return direct;
+
+        const all = await this.getAllTimeEntries();
+        const match = all.find(e => {
+            if (!e) return false;
+            if (e.workItemId !== workItemId) return false;
+
+            const storedUserId = e.userId !== undefined && e.userId !== null ? String(e.userId) : "";
+            const storedUserName = e.userName || "";
+            const lookup = String(userId || "");
+            return storedUserId === lookup || storedUserName === lookup;
+        });
+        if (match) return match;
+
+        return null;
     }
 
     /**
@@ -200,13 +219,21 @@ export class TimeEntryService {
         try {
             const documents = await dataManager.getDocuments(COLLECTION_NAME) as any[];
             if (!documents || documents.length === 0) return [];
-            // Backwards-compat: synthesize `logs` for documents that still have legacy `hours` field
+          
             return documents.map(doc => {
                 if ((!doc.logs || !Array.isArray(doc.logs)) && (doc.hours !== undefined && doc.hours !== null)) {
-                    const dateSrc = (doc.updatedAt || doc.createdAt || new Date().toISOString()).slice(0, 10);
+                    let dateSrc = (doc.updatedAt || doc.createdAt || new Date().toISOString()).slice(0, 10);
+                    try {
+                        if (doc.auditLog && Array.isArray(doc.auditLog) && doc.auditLog.length > 0) {
+                            const lastAudit = doc.auditLog[doc.auditLog.length - 1];
+                            if (lastAudit && lastAudit.timestamp) {
+                                dateSrc = new Date(lastAudit.timestamp).toISOString().slice(0, 10);
+                            }
+                        }
+                    } catch {  }
                     doc.logs = [{ date: dateSrc, hours: Number(doc.hours) || 0 }];
                 }
-                // Normalize numeric fields to expected types
+                
                 if (doc.workItemId !== undefined && doc.workItemId !== null) {
                     doc.workItemId = Number(doc.workItemId);
                 }

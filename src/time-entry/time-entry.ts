@@ -116,12 +116,14 @@ async function init(): Promise<void> {
  */
 async function loadTimeEntry(): Promise<void> {
   try {
-    currentEntry = await timeEntryService.getTimeEntryForWorkItem(
+    const entries = await timeEntryService.getTimeEntriesForWorkItem(
       currentWorkItemId,
-      currentUserId,
     );
+
+ 
+    currentEntry = entries.find((e) => String(e.userId) === String(currentUserId)) || null;
     let today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    // Show today's date in the UI
+
     const todayDateEl = document.getElementById("todayDate");
     if (todayDateEl) {
       const d = new Date();
@@ -133,7 +135,7 @@ async function loadTimeEntry(): Promise<void> {
       });
     }
     
-    const allLogs = currentEntry?.logs || [];
+    const allLogsRaw = entries.flatMap((e) => e.logs || []);
     const normalizeDate = (d: string) => {
       try {
         return new Date(d).toISOString().slice(0, 10);
@@ -141,6 +143,12 @@ async function loadTimeEntry(): Promise<void> {
         return (d || "").slice(0, 10);
       }
     };
+    const aggMap: Record<string, number> = {};
+    for (const l of allLogsRaw) {
+      const key = normalizeDate(l.date);
+      aggMap[key] = (aggMap[key] || 0) + (Number(l.hours) || 0);
+    }
+    const allLogs = Object.keys(aggMap).map((date) => ({ date, hours: aggMap[date] }));
     const todayLogs = allLogs.filter((l) => normalizeDate(l.date) === today);
     const todayHours = todayLogs.reduce((sum, l) => sum + l.hours, 0);
 
@@ -160,28 +168,32 @@ async function loadTimeEntry(): Promise<void> {
       totalLarge.textContent =
         (todayHours > 0 ? todayHours.toString() : totalHours.toString()) || "0";
 
-    if (todayLogs.length === 0) {
-      hoursInput.value = "0";
-      if (saveBtn) saveBtn.textContent = "Add Time";
-    } else {
-      const latest = todayLogs[todayLogs.length - 1];
-
-      hoursInput.value =
-        latest && latest.hours !== undefined
-          ? latest.hours.toString()
-          : todayHours.toString();
-      if (saveBtn) saveBtn.textContent = "Update Time";
-    }
+    const todayAggregatedHours = aggMap[today] || 0;
+    hoursInput.value = todayAggregatedHours.toString();
+    if (saveBtn) saveBtn.textContent = todayAggregatedHours > 0 ? "Update Time" : "Add Time";
     hoursInput.disabled = false;
     if (saveBtn) saveBtn.disabled = false;
-    if (currentEntry) {
-      lastSavedDiv.classList.remove("hidden");
-      lastSavedTime.textContent = formatDate(currentEntry.updatedAt);
-      if (currentEntry.auditLog && currentEntry.auditLog.length > 0) {
-        renderHistory(currentEntry.auditLog);
+
+
+    if (entries && entries.length > 0) {
+      const latestUpdate = entries
+        .map((e) => e.updatedAt)
+        .filter(Boolean)
+        .sort()
+        .reverse()[0];
+      if (latestUpdate) {
+        lastSavedDiv.classList.remove("hidden");
+        lastSavedTime.textContent = formatDate(latestUpdate);
+      }
+
+     
+      const combinedAudit: AuditLogEntry[] = entries.flatMap((e) => e.auditLog || []);
+      if (combinedAudit && combinedAudit.length > 0) {
+        renderHistory(combinedAudit);
       }
     }
-    renderDailyLogs(currentEntry?.logs || []);
+
+    renderDailyLogs(allLogs);
     ensureSaveBtnAndInput();
   } catch (error) {
     console.error("Error loading time entry:", error);
@@ -190,7 +202,6 @@ async function loadTimeEntry(): Promise<void> {
 
 /**
  * Ensure the hours input and save button reflect today's state.
- * Run as a microtask/timeout to avoid race conditions with DOM updates.
  */
 function ensureSaveBtnAndInput(): void {
   try {
@@ -266,10 +277,6 @@ function renderDailyLogs(logs: { date: string; hours: number }[]): void {
 }
 
 /**
- * Update a specific day's log with the value from the corresponding input
- */
-
-/**
  * Render history entries with name and time
  */
 function renderHistory(entries: AuditLogEntry[]): void {
@@ -341,7 +348,6 @@ async function saveTime(): Promise<void> {
   saveBtn.disabled = true;
   saveBtn.textContent = "Saving...";
 
-  // Step 1: persist the time entry
   const hours = parseFloat(hoursInput.value) || 0;
   const comment = commentInput.value.trim();
   const today = new Date().toISOString().slice(0, 10);
@@ -371,7 +377,6 @@ async function saveTime(): Promise<void> {
     return;
   }
 
-  // Step 2: refresh local UI (best-effort)
   try {
     await loadTimeEntry();
     lastSavedDiv.classList.remove("hidden");
@@ -384,10 +389,8 @@ async function saveTime(): Promise<void> {
     }
   } catch (err) {
     console.error("Failed to reload entry after save:", err);
-    // proceed — data is persisted, UI may be stale until refresh
   }
 
-  // Step 3: notify other tabs/pages (best-effort)
   try {
     try {
       const bc = new BroadcastChannel("azure-time-tracker");
@@ -400,7 +403,6 @@ async function saveTime(): Promise<void> {
     console.error('Notification failed', err);
   }
 
-  // Step 4: success UX
   saveBtn.textContent = "✓ Updated!";
   setTimeout(() => {
     saveBtn.textContent = "Update Time";

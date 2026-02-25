@@ -145,7 +145,7 @@ async function loadAllEntries(): Promise<void> {
  * Populate filter dropdowns based on available data
  */
 function populateFilterDropdowns(): void {
-    // Get unique users
+    
     const users = new Map<string, string>();
     const workItemTypes = new Set<string>();
 
@@ -187,10 +187,10 @@ function setupDateRangePresets(): void {
             const range = (e.target as HTMLElement).dataset.range;
             if (range) {
                 setDateRangePreset(range);
-                // Update active state
+                
                 presetButtons.forEach(b => b.classList.remove("active"));
                 (e.target as HTMLElement).classList.add("active");
-                // Apply filters immediately when a preset is chosen
+               
                 applyFilters();
             }
         });
@@ -200,7 +200,6 @@ function setupDateRangePresets(): void {
 // Listen for changes from other pages (time entry saves) and refresh data
 window.addEventListener('storage', (e: StorageEvent) => {
     if (e.key === 'timeEntryUpdated') {
-        // Delay slightly to allow data propagation
         setTimeout(() => refreshData(), 100);
     }
 });
@@ -291,7 +290,6 @@ function resetFilters(): void {
     filterUser.value = "";
     filterWorkItemType.value = "";
 
-    // Remove active state from presets
     document.querySelectorAll(".preset-btn").forEach(btn => btn.classList.remove("active"));
 
     applyFilters();
