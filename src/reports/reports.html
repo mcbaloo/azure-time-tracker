@@ -188,7 +188,7 @@
             
             <!-- Date Range Presets -->
             <div class="date-range-preset">
-                <button class="preset-btn" data-range="today">Today</button>
+                    <button class="preset-btn" data-range="today">Today</button>
                 <button class="preset-btn" data-range="week">This Week</button>
                 <button class="preset-btn active" data-range="month">This Month</button>
                 <button class="preset-btn" data-range="quarter">This Quarter</button>
@@ -216,6 +216,10 @@
                     <select id="filterWorkItemType" class="form-control">
                         <option value="">All Types</option>
                     </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterWorkItemId">Work Item ID</label>
+                    <input type="number" id="filterWorkItemId" class="form-control" placeholder="e.g. 12345">
                 </div>
             </div>
             <div class="filter-actions">
@@ -284,7 +288,7 @@
                             <th>Hours</th>
                             <th>User</th>
                             <th>Description</th>
-                            <th>Last Updated</th>
+                            <th>Date</th>
                         </tr>
                     </thead>
                     <tbody id="resultsBody">

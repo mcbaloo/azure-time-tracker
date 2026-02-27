@@ -1,0 +1,9 @@
+{
+  "manifestVersion": 1,
+  "id": "time-tracker-logger-DEV",
+  "version": "1.2.28",
+  "name": "Time Tracker Logger (LOCAL TEST)",
+  "public": false,
+  "description": "Track and log time spent on work items and generate detailed reports",
+  "publisher": "mcbaloo-apps"
+}

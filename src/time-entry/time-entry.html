@@ -9,7 +9,8 @@
         body {
             padding: 12px 16px;
             font-size: 13px;
-            max-width: 600px;
+            max-width: 1000px;
+            width: 100%;
         }
 
         .section {
@@ -32,18 +33,31 @@
 
         /* Time Input Section */
         .time-section {
-          background: linear-gradient(135deg, #000 0%, #106ebe 100%);
             padding: 12px 16px;
             border-radius: 6px;
             color: white;
             margin-bottom: 16px;
+            background: linear-gradient(135deg, #000 0%, #106ebe 100%);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 2px rgba(16,16,16,0.04);
+        }
+
+        /* Compact card variant for single-ticket daily logging */
+        .time-card {
+            width: 100%;
+            padding: 12px 12px;
+            background: #ffffff;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            border: 1px solid var(--border-color);
         }
 
         .time-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            gap: 8px;
         }
 
         .time-label {
@@ -52,18 +66,19 @@
         }
 
         .current-time {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
+            color: var(--primary-color);
         }
 
         .time-controls {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
             flex-wrap: wrap;
         }
-
-        .time-input-group {
+         .time-input-group {
             display: flex;
             align-items: center;
             background: rgba(255,255,255,0.15);
@@ -112,6 +127,33 @@
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
+        }
+        /* small summary badge used for Today / All Time */
+        .summary-badge {
+            background: #fff;
+            color: var(--text-color);
+            border-radius: 6px;
+            padding: 6px 10px;
+            min-width: 64px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .summary-badge .label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .summary-badge .value {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .summary-badge.primary .value {
+            color: var(--primary-color);
         }
 
         .q-btn {
@@ -192,15 +234,38 @@
             overflow: hidden;
         }
 
+        /* Two column layout for work item view: main + history sidebar */
+        .layout-two-column {
+            display: grid;
+            grid-template-columns: 640px 360px; /* main column keeps original width, sidebar fixed */
+            gap: 16px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .layout-two-column {
+                grid-template-columns: 1fr;
+            }
+            .history-section {
+                order: 99; 
+            }
+        }
+
+        .history-section .history-list {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
         .history-header {
-            background: var(--background-hover);
-            padding: 12px 16px;
+            background: transparent;
+            padding: 10px 14px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             gap: 8px;
+            color: var(--text-color);
         }
 
         .history-list {
@@ -209,10 +274,12 @@
         }
 
         .history-item {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--background-hover);
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             gap: 12px;
+            align-items: flex-start;
+            background: transparent;
         }
 
         .history-item:last-child {
@@ -220,8 +287,8 @@
         }
 
         .history-avatar {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: #0078d4;
             color: white;
@@ -231,6 +298,7 @@
             font-size: 14px;
             font-weight: 600;
             flex-shrink: 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
 
         .history-avatar.created {
@@ -261,18 +329,20 @@
         }
 
         .history-hours {
-            background: #e6f2ff;
-            color: #0078d4;
-            padding: 2px 8px;
+            background: #eef7ff;
+            color: var(--primary-color);
+            padding: 4px 8px;
             border-radius: 12px;
             font-size: 12px;
             font-weight: 600;
+            border: 1px solid rgba(16,111,214,0.08);
         }
 
         .history-time {
             color: var(--text-secondary);
             font-size: 12px;
             margin-left: auto;
+            white-space: nowrap;
         }
 
         .history-notes {
@@ -282,7 +352,8 @@
             padding: 8px 12px;
             background: var(--background-hover);
             border-radius: 6px;
-            border-left: 3px solid #0078d4;
+            border-left: 3px solid rgba(0,120,212,0.12);
+            line-height: 1.4;
         }
 
         .no-history {
@@ -368,75 +439,96 @@
 
     <!-- Main Content -->
     <div id="mainContent" class="hidden">
-        <!-- Time Input Section -->
-        <div class="time-section">
-            <div class="time-header">
-                <div>
-                    <div class="time-label">Total Time Logged</div>
-                    <div class="current-time"><span id="currentHours">0</span> hours</div>
-                </div>
-            </div>
-            <div class="time-controls">
-                <div class="time-input-group">
-                    <button class="spin-btn" onclick="decrementHours()">−</button>
-                    <input type="number" id="hoursInput" min="0" max="1000" step="0.5" value="0" placeholder="0">
-                    <button class="spin-btn" onclick="incrementHours()">+</button>
-                </div>
-                <div class="quick-btns">
-                    <button class="q-btn" onclick="addHours(0.5)">+30 min</button>
-                    <button class="q-btn" onclick="addHours(1)">+1 hour</button>
-                    <button class="q-btn" onclick="addHours(3)">+3 hours</button>
-                    <button class="q-btn" onclick="addHours(6)">+6 hours</button>
-                    <button class="q-btn" onclick="addHours(8)">+8 hours</button>
-                    <button class="q-btn reset" onclick="setHours(0)">Reset</button>
-                </div>
-            </div>
-        </div>
+        <div class="layout-two-column">
+            <main>
+                <!-- Daily Logging Experience -->
+                <div class="time-section">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                        <span style="font-size: 15px;">🗓️</span>
+                        <div style="font-size: 13px; font-weight: 600;">Log Time for Today</div>
+                        <span style="font-size: 11px; color: #888;">(<span id="todayDate"></span>)</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <div class="summary-badge primary">
+                            <div class="label">Today</div>
+                            <div class="value"><span id="todayHours">0</span>h</div>
+                        </div>
+                        <div class="summary-badge">
+                            <div class="label">All Time</div>
+                            <div class="value"><span id="currentHours">0</span>h</div>
+                        </div>
+                    </div>
+                    <div class="time-controls">
+                            <div class="time-input-group">
+                                <button class="spin-btn" onclick="decrementHours()">−</button>
+                                <input type="number" id="hoursInput" min="0" max="1000" step="0.5" value="0" placeholder="0">
+                                <button class="spin-btn" onclick="incrementHours()">+</button>
+                            </div>
+                            <div class="quick-btns">
+                                <button class="q-btn" onclick="addHours(0.5)">+30 min</button>
+                                <button class="q-btn" onclick="addHours(1)">+1 hour</button>
+                                <button class="q-btn" onclick="addHours(3)">+3 hours</button>
+                                <button class="q-btn" onclick="addHours(6)">+6 hours</button>
+                                <button class="q-btn" onclick="addHours(8)">+8 hours</button>
+                                <button class="q-btn reset" onclick="setHours(0)">Reset</button>
+                            </div>
+                  </div>
 
-        <!-- Comment Section -->
-        <div class="section">
-            <div class="section-title">
-                <span class="icon">💬</span>
-                Add a Comment
-            </div>
-            <div class="comment-section">
-                <div class="comment-input-row">
-                    <textarea id="commentInput" class="comment-input" placeholder="Add a comment about your work (optional)..."></textarea>
                 </div>
-            </div>
-        </div>
 
-        <!-- Action Row -->
-        <div class="action-row">
-            <button class="save-btn" id="saveBtn" onclick="saveTime()">Save Time</button>
-            <span id="lastSaved" class="last-saved hidden">
-                Last saved: <span id="lastSavedTime"></span>
-            </span>
-        </div>
-
-        <!-- History Section -->
-        <div class="section">
-            <div class="history-section">
-                <div class="history-header">
-                    <span>📋</span>
-                    Activity History
+                <!-- Comment Section -->
+                <div class="section">
+                    <div class="section-title">
+                        <span class="icon">💬</span>
+                        Add a Comment
+                    </div>
+                    <div class="comment-section">
+                        <div class="comment-input-row">
+                            <textarea id="commentInput" class="comment-input" placeholder="Add a comment about your work (optional)..."></textarea>
+                        </div>
+                        <div style="margin-top:10px; display:flex; align-items:center; gap:12px;">
+                            <button class="save-btn" id="saveBtn" style="font-size:13px; padding:8px 20px;" onclick="saveTime()">Add Time</button>
+                            <span id="lastSaved" class="last-saved hidden">Last saved: <span id="lastSavedTime"></span></span>
+                        </div>
+                    </div>
                 </div>
-                <div id="historyList" class="history-list">
-                    <div class="no-history">No activity yet</div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Settings -->
-        <div class="section">
-            <div class="settings-row">
-                <label>⚙️ Time increment:</label>
-                <select id="incrementSelect" onchange="updateIncrement()">
-                    <option value="0.25">15 minutes</option>
-                    <option value="0.5" selected>30 minutes</option>
-                    <option value="1">1 hour</option>
-                </select>
-            </div>
+                <!-- Daily Logs (read-only) -->
+                <div class="section">
+                    <div class="section-title">
+                        <span class="icon">📝</span>
+                        Daily Time Log
+                    </div>
+                    <div id="dailyLogs" style="margin-bottom:12px;"></div>
+                </div>
+
+                <!-- Settings -->
+                <div class="section">
+                    <div class="settings-row">
+                        <label>⚙️ Time increment:</label>
+                        <select id="incrementSelect" onchange="updateIncrement()">
+                            <option value="0.25">15 minutes</option>
+                            <option value="0.5" selected>30 minutes</option>
+                            <option value="1">1 hour</option>
+                        </select>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Right column: Activity History -->
+            <aside>
+                <div class="section">
+                    <div class="history-section">
+                        <div class="history-header">
+                            <span>📋</span>
+                            Activity History
+                        </div>
+                        <div id="historyList" class="history-list">
+                            <div class="no-history">No activity yet</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </div>
     </div>
 
@@ -450,5 +542,26 @@
     </div>
 
     <script type="module" src="./time-entry.js"></script>
+    <script>
+        // Keep the large total display in sync with the small badges
+        function refreshTotalDisplay(){
+            const today = document.getElementById('todayHours');
+            const all = document.getElementById('currentHours');
+            const target = document.getElementById('totalHoursLarge');
+            if(!target) return;
+            // prefer today's hours if present, otherwise all time
+            const val = (today && today.textContent && today.textContent.trim() !== '0') ? today.textContent.trim() : (all ? all.textContent.trim() : '0');
+            target.textContent = val || '0';
+        }
+        document.addEventListener('DOMContentLoaded', ()=>{
+            refreshTotalDisplay();
+            // simple observers to keep it in sync when spans update
+            const t = document.getElementById('todayHours');
+            const a = document.getElementById('currentHours');
+            const obs = new MutationObserver(refreshTotalDisplay);
+            if(t) obs.observe(t, {childList:true, characterData:true, subtree:true});
+            if(a) obs.observe(a, {childList:true, characterData:true, subtree:true});
+        });
+    </script>
 </body>
 </html>

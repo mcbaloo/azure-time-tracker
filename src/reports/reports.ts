@@ -30,7 +30,21 @@ let chartByType: HTMLElement;
 
 // Data
 let allEntries: TimeEntry[] = [];
-let filteredEntries: TimeEntry[] = [];
+// Flattened log entries for reporting
+type FlatLog = {
+    workItemId: number;
+    workItemTitle?: string;
+    workItemType?: string;
+    projectId: string;
+    projectName?: string;
+    userId: string;
+    userName?: string;
+    description: string;
+    date: string;
+    hours: number;
+};
+let flatLogs: FlatLog[] = [];
+let filteredLogs: FlatLog[] = [];
 let currentFilter: TimeReportFilter = {};
 
 /**
@@ -101,9 +115,29 @@ async function init(): Promise<void> {
 async function loadAllEntries(): Promise<void> {
     try {
         allEntries = await timeEntryService.getAllTimeEntries();
+        flatLogs = [];
+        for (const entry of allEntries) {
+            if (entry.logs && entry.logs.length > 0) {
+                for (const log of entry.logs) {
+                    flatLogs.push({
+                        workItemId: entry.workItemId,
+                        workItemTitle: entry.workItemTitle,
+                        workItemType: entry.workItemType,
+                        projectId: entry.projectId,
+                        projectName: entry.projectName,
+                        userId: entry.userId,
+                        userName: entry.userName,
+                        description: entry.description,
+                        date: log.date,
+                        hours: log.hours
+                    });
+                }
+            }
+        }
     } catch (error) {
         console.error("Error loading entries:", error);
         allEntries = [];
+        flatLogs = [];
     }
 }
 
@@ -111,7 +145,7 @@ async function loadAllEntries(): Promise<void> {
  * Populate filter dropdowns based on available data
  */
 function populateFilterDropdowns(): void {
-    // Get unique users
+    
     const users = new Map<string, string>();
     const workItemTypes = new Set<string>();
 
@@ -153,13 +187,22 @@ function setupDateRangePresets(): void {
             const range = (e.target as HTMLElement).dataset.range;
             if (range) {
                 setDateRangePreset(range);
-                // Update active state
+                
                 presetButtons.forEach(b => b.classList.remove("active"));
                 (e.target as HTMLElement).classList.add("active");
+               
+                applyFilters();
             }
         });
     });
 }
+
+// Listen for changes from other pages (time entry saves) and refresh data
+window.addEventListener('storage', (e: StorageEvent) => {
+    if (e.key === 'timeEntryUpdated') {
+        setTimeout(() => refreshData(), 100);
+    }
+});
 
 /**
  * Set date range based on preset
@@ -172,6 +215,7 @@ function setDateRangePreset(preset: string): void {
     switch (preset) {
         case "today":
             startDate = today;
+            endDate = today;
             break;
         case "week":
             startDate = new Date(today);
@@ -210,25 +254,28 @@ function applyFilters(): void {
         workItemType: filterWorkItemType.value || undefined
     };
 
-    // Filter entries using updatedAt
-    filteredEntries = allEntries.filter(entry => {
-        const entryDate = entry.updatedAt.split("T")[0];
-        if (currentFilter.startDate && entryDate < currentFilter.startDate) {
+    // Get work item id filter value
+    const workItemIdFilter = (document.getElementById("filterWorkItemId") as HTMLInputElement)?.value || undefined;
+
+    // Filter logs using date and work item id
+    filteredLogs = flatLogs.filter(log => {
+        if (currentFilter.startDate && log.date < currentFilter.startDate) {
             return false;
         }
-        if (currentFilter.endDate && entryDate > currentFilter.endDate) {
+        if (currentFilter.endDate && log.date > currentFilter.endDate) {
             return false;
         }
-        if (currentFilter.userId && entry.userId !== currentFilter.userId) {
+        if (currentFilter.userId && log.userId !== currentFilter.userId) {
             return false;
         }
-        if (currentFilter.workItemType && entry.workItemType !== currentFilter.workItemType) {
+        if (currentFilter.workItemType && log.workItemType !== currentFilter.workItemType) {
+            return false;
+        }
+        if (workItemIdFilter && log.workItemId.toString() !== workItemIdFilter) {
             return false;
         }
         return true;
     });
-
-    // Update reports
     updateSummary();
     renderCharts();
     renderTable();
@@ -243,7 +290,6 @@ function resetFilters(): void {
     filterUser.value = "";
     filterWorkItemType.value = "";
 
-    // Remove active state from presets
     document.querySelectorAll(".preset-btn").forEach(btn => btn.classList.remove("active"));
 
     applyFilters();
@@ -271,18 +317,16 @@ async function refreshData(): Promise<void> {
  * Update summary statistics
  */
 function updateSummary(): void {
-    const totalHours = filteredEntries.reduce((sum, e) => sum + e.hours, 0);
-    const totalEntries = filteredEntries.length;
-    
+    const totalHours = filteredLogs.reduce((sum, e) => sum + e.hours, 0);
+    const totalEntries = filteredLogs.length;
     // Calculate unique work items
-    const uniqueWorkItems = new Set(filteredEntries.map(e => e.workItemId)).size;
+    const uniqueWorkItems = new Set(filteredLogs.map(e => e.workItemId)).size;
     const avgPerWorkItem = uniqueWorkItems > 0 ? totalHours / uniqueWorkItems : 0;
-
     totalHoursEl.textContent = totalHours.toFixed(1);
     totalEntriesEl.textContent = totalEntries.toString();
     avgHoursPerDayEl.textContent = avgPerWorkItem.toFixed(1);
     uniqueWorkItemsEl.textContent = uniqueWorkItems.toString();
-    resultsCountEl.textContent = `${totalEntries} entries`;
+    resultsCountEl.textContent = `${totalEntries} logs`;
 }
 
 /**
@@ -293,12 +337,11 @@ function renderCharts(): void {
     const hoursByUser: Record<string, number> = {};
     const hoursByType: Record<string, number> = {};
 
-    for (const entry of filteredEntries) {
-        const userName = entry.userName || entry.userId || "Unknown";
-        const workItemType = entry.workItemType || "Unknown";
-
-        hoursByUser[userName] = (hoursByUser[userName] || 0) + entry.hours;
-        hoursByType[workItemType] = (hoursByType[workItemType] || 0) + entry.hours;
+    for (const log of filteredLogs) {
+        const userName = log.userName || log.userId || "Unknown";
+        const workItemType = log.workItemType || "Unknown";
+        hoursByUser[userName] = (hoursByUser[userName] || 0) + log.hours;
+        hoursByType[workItemType] = (hoursByType[workItemType] || 0) + log.hours;
     }
 
     // Render charts
@@ -336,33 +379,28 @@ function renderBarChart(data: Record<string, number>): string {
  * Render the results table
  */
 function renderTable(): void {
-    if (filteredEntries.length === 0) {
+    if (filteredLogs.length === 0) {
         emptyState.classList.remove("hidden");
         resultsTable.classList.add("hidden");
         return;
     }
-
     emptyState.classList.add("hidden");
     resultsTable.classList.remove("hidden");
-
-    // Sort by updatedAt descending
-    const sortedEntries = [...filteredEntries].sort((a, b) => 
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
-
-    resultsBody.innerHTML = sortedEntries.map(entry => `
+    // Sort by date descending
+    const sortedLogs = [...filteredLogs].sort((a, b) => b.date.localeCompare(a.date));
+    resultsBody.innerHTML = sortedLogs.map(log => `
         <tr>
             <td>
-                <a href="#" class="work-item-link" onclick="openWorkItem(${entry.workItemId}); return false;">
-                    #${entry.workItemId}
+                <a href="#" class="work-item-link" onclick="openWorkItem(${log.workItemId}); return false;">
+                    #${log.workItemId}
                 </a>
-                ${escapeHtml(entry.workItemTitle || "")}
+                ${escapeHtml(log.workItemTitle || "")}
             </td>
-            <td>${escapeHtml(entry.workItemType || "-")}</td>
-            <td><strong>${entry.hours}h</strong></td>
-            <td>${escapeHtml(entry.userName || entry.userId || "-")}</td>
-            <td>${escapeHtml(entry.description || "-")}</td>
-            <td>${formatDate(entry.updatedAt)}</td>
+            <td>${escapeHtml(log.workItemType || "-")}</td>
+            <td><strong>${log.hours}h</strong></td>
+            <td>${escapeHtml(log.userName || log.userId || "-")}</td>
+            <td>${escapeHtml(log.description || "-")}</td>
+            <td>${log.date}</td>
         </tr>
     `).join("");
 }
@@ -371,15 +409,27 @@ function renderTable(): void {
  * Export filtered entries to CSV
  */
 function exportToCSV(): void {
-    if (filteredEntries.length === 0) {
+    if (filteredLogs.length === 0) {
         alert("No entries to export");
         return;
     }
-
-    const csv = timeEntryService.exportToCSV(filteredEntries);
+    // Generate CSV from filteredLogs
+    const csvRows = [
+        'Work Item,Type,Hours,User,Description,Date'
+    ];
+    for (const log of filteredLogs) {
+        csvRows.push([
+            `#${log.workItemId}`,
+            log.workItemType || '-',
+            log.hours,
+            log.userName || log.userId || '-',
+            '"' + (log.description || '').replace(/"/g, '""') + '"',
+            log.date
+        ].join(','));
+    }
+    const csv = csvRows.join('\n');
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
     const dateStr = new Date().toISOString().split("T")[0];
     link.setAttribute("href", url);
