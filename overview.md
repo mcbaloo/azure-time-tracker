@@ -72,6 +72,8 @@ Implementation notes:
 - Initial release with time tracking and reports
 ### v2.0.2
 - Add Daily time log for work items. Users can now log time daily on a single ticket to report daily time spent.
+ ### v2.0.3
+- Add Time for Any date.
 
 ## Support
 
