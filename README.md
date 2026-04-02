@@ -12,6 +12,7 @@ A Visual Studio Marketplace extension for Azure DevOps that enables time trackin
 - View, edit, and delete time entries
 - See total hours spent on each work item
 - Add Daily time log for work items.
+- Add Time for Any date
 
 ### Time Reports Hub
 - View aggregated time data across the project

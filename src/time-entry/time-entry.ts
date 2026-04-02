@@ -17,6 +17,7 @@ let mainContent: HTMLElement;
 let errorState: HTMLElement;
 let errorMessage: HTMLElement;
 let hoursInput: HTMLInputElement;
+let dateInput: HTMLInputElement;
 let commentInput: HTMLTextAreaElement;
 let currentHoursDisplay: HTMLElement;
 let lastSavedDiv: HTMLElement;
@@ -53,9 +54,15 @@ async function init(): Promise<void> {
     errorState = document.getElementById("errorState")!;
     errorMessage = document.getElementById("errorMessage")!;
     hoursInput = document.getElementById("hoursInput") as HTMLInputElement;
+    dateInput = document.getElementById("dateInput") as HTMLInputElement;
     commentInput = document.getElementById(
       "commentInput",
     ) as HTMLTextAreaElement;
+
+    // Initialize date picker: default to today, disallow future dates
+    const todayISO = new Date().toISOString().slice(0, 10);
+    dateInput.value = todayISO;
+    dateInput.max = todayISO;
     currentHoursDisplay = document.getElementById("currentHours")!;
     lastSavedDiv = document.getElementById("lastSaved")!;
     lastSavedTime = document.getElementById("lastSavedTime")!;
@@ -208,7 +215,7 @@ async function loadTimeEntry(): Promise<void> {
  */
 function ensureSaveBtnAndInput(): void {
   try {
-    const today = new Date().toISOString().slice(0, 10);
+    const selectedDate = (dateInput && dateInput.value) || new Date().toISOString().slice(0, 10);
     const allLogs = currentEntryTimeLog || [];
     const normalizeDate = (d: string) => {
       try {
@@ -217,20 +224,20 @@ function ensureSaveBtnAndInput(): void {
         return (d || "").slice(0, 10);
       }
     };
-    const todayLogs = allLogs.filter((l) => normalizeDate(l.date) === today);
+    const dateLogs = allLogs.filter((l) => normalizeDate(l.date) === selectedDate);
     const saveBtn = document.getElementById(
       "saveBtn",
     ) as HTMLButtonElement | null;
-    if (todayLogs.length === 0) {
+    if (dateLogs.length === 0) {
       if (hoursInput) hoursInput.value = "0";
       if (saveBtn) saveBtn.textContent = "Add Time";
     } else {
-      const latest = todayLogs[todayLogs.length - 1];
+      const latest = dateLogs[dateLogs.length - 1];
       if (hoursInput)
         hoursInput.value =
           latest && latest.hours !== undefined
             ? latest.hours.toString()
-            : todayLogs.reduce((s, l) => s + l.hours, 0).toString();
+            : dateLogs.reduce((s, l) => s + l.hours, 0).toString();
       if (saveBtn) saveBtn.textContent = "Update Time";
     }
     if (saveBtn) saveBtn.disabled = false;
@@ -238,6 +245,17 @@ function ensureSaveBtnAndInput(): void {
   } catch (e) {
     console.error("ensureSaveBtnAndInput error", e);
   }
+}
+
+/**
+ * Handle date picker change — refresh hours input to reflect selected date
+ */
+function onDateChanged(): void {
+  const todayISO = new Date().toISOString().slice(0, 10);
+  if (dateInput.value > todayISO) {
+    dateInput.value = todayISO;
+  }
+  ensureSaveBtnAndInput();
 }
 
 /**
@@ -353,7 +371,16 @@ async function saveTime(): Promise<void> {
 
   const hours = parseFloat(hoursInput.value) || 0;
   const comment = commentInput.value.trim();
-  const today = new Date().toISOString().slice(0, 10);
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const selectedDate = dateInput.value || todayISO;
+
+  // Prevent future dates
+  if (selectedDate > todayISO) {
+    alert("Future dates are not allowed.");
+    saveBtn.textContent = currentEntry ? "Update Time" : "Add Time";
+    saveBtn.disabled = false;
+    return;
+  }
 
   try {
     currentEntry = await timeEntryService.setTimeEntry(
@@ -365,7 +392,7 @@ async function saveTime(): Promise<void> {
         projectName: currentProjectName,
         logs: currentEntry?.logs || [],
         hours,
-        date: today,
+        date: selectedDate,
         description: currentEntry?.description || "",
         userId: currentUserId,
         userName: currentUserName,
@@ -493,6 +520,7 @@ declare global {
     addHours: typeof addHours;
     setHours: typeof setHours;
     updateIncrement: typeof updateIncrement;
+    onDateChanged: typeof onDateChanged;
   }
 }
 
@@ -502,6 +530,7 @@ window.decrementHours = decrementHours;
 window.addHours = addHours;
 window.setHours = setHours;
 window.updateIncrement = updateIncrement;
+window.onDateChanged = onDateChanged;
 
 // Initialize on DOM ready
 document.addEventListener("DOMContentLoaded", init);
