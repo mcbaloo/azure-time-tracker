@@ -445,7 +445,7 @@
                 <div class="time-section">
                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                         <span style="font-size: 15px;">🗓️</span>
-                        <div style="font-size: 13px; font-weight: 600;">Log Time for Today</div>
+                        <div style="font-size: 13px; font-weight: 600;">Log Time</div>
                         <span style="font-size: 11px; color: #888;">(<span id="todayDate"></span>)</span>
                     </div>
                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
@@ -459,10 +459,16 @@
                         </div>
                     </div>
                     <div class="time-controls">
-                            <div class="time-input-group">
-                                <button class="spin-btn" onclick="decrementHours()">−</button>
-                                <input type="number" id="hoursInput" min="0" max="1000" step="0.5" value="0" placeholder="0">
-                                <button class="spin-btn" onclick="incrementHours()">+</button>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="time-input-group">
+                                    <button class="spin-btn" onclick="decrementHours()">−</button>
+                                    <input type="number" id="hoursInput" min="0" max="1000" step="0.5" value="0" placeholder="0">
+                                    <button class="spin-btn" onclick="incrementHours()">+</button>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <label for="dateInput" style="font-size: 12px; opacity: 0.9;">Date:</label>
+                                    <input type="date" id="dateInput" style="padding: 5px 8px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; background: rgba(255,255,255,0.15); color: white; font-size: 13px; font-family: inherit; cursor: pointer;" onchange="onDateChanged()">
+                                </div>
                             </div>
                             <div class="quick-btns">
                                 <button class="q-btn" onclick="addHours(0.5)">+30 min</button>

@@ -53,3 +53,7 @@ local.test.ts
 
 # Ignore Azure DevOps artifacts
 .azure/
+
+#deployment filea
+vss-extension-dev.json
+vss-extension.json
