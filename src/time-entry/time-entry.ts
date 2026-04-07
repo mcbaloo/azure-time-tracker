@@ -291,6 +291,9 @@ function renderDailyLogs(logs: { date: string; hours: number }[]): void {
                 <div style="min-width:140px;color:var(--text-secondary);font-size:13px;">${displayDate}</div>
                 <div style="padding:4px 8px;border-radius:10px;background:#f1f8ff;color:var(--primary-color);font-weight:600;font-size:13px;">${l.hours}h</div>
                 <div style="margin-left:auto;color:var(--text-secondary);font-size:12px;">${l.date}</div>
+                <button class="delete-log-btn" onclick="deleteTimeLog('${l.date}', ${l.hours})" title="Delete this log">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H5.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1h2a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                </button>
             </div>
         `;
     })
@@ -511,6 +514,50 @@ function formatDate(dateString: string): string {
   });
 }
 
+/**
+ * Delete a specific daily time log after user confirmation
+ */
+async function deleteTimeLog(date: string, hours: number): Promise<void> {
+  const displayDate = new Date(date).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const confirmed = confirm(
+    `Are you sure you want to delete the ${hours}h logged on ${displayDate}?\n\nThis action cannot be undone.`
+  );
+  if (!confirmed) return;
+
+  try {
+    await timeEntryService.deleteTimeLog(
+      currentWorkItemId,
+      currentUserId,
+      date,
+      currentUserName
+    );
+
+    await loadTimeEntry();
+
+    // Notify other tabs
+    try {
+      const bc = new BroadcastChannel("azure-time-tracker");
+      bc.postMessage("timeEntryUpdated");
+      bc.close();
+    } catch {
+      try {
+        localStorage.setItem("timeEntryUpdated", new Date().toISOString());
+      } catch (le) {
+        console.error("fallback storage failed", le);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to delete time log:", err);
+    alert("Failed to delete the time log. Please try again.");
+  }
+}
+
 // Make functions available globally for onclick handlers
 declare global {
   interface Window {
@@ -521,6 +568,7 @@ declare global {
     setHours: typeof setHours;
     updateIncrement: typeof updateIncrement;
     onDateChanged: typeof onDateChanged;
+    deleteTimeLog: typeof deleteTimeLog;
   }
 }
 
@@ -531,6 +579,7 @@ window.addHours = addHours;
 window.setHours = setHours;
 window.updateIncrement = updateIncrement;
 window.onDateChanged = onDateChanged;
+window.deleteTimeLog = deleteTimeLog;
 
 // Initialize on DOM ready
 document.addEventListener("DOMContentLoaded", init);

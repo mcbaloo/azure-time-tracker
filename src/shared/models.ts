@@ -33,7 +33,7 @@ export interface AuditLogEntry {
     timestamp: string;
     userId: string;
     userName: string;
-    action: 'created' | 'updated';
+    action: 'created' | 'updated' | 'deleted';
     previousHours?: number;
     newHours: number;
     notes?: string;

@@ -74,7 +74,8 @@ Implementation notes:
 - Add Daily time log for work items. Users can now log time daily on a single ticket to report daily time spent.
  ### v2.0.3
 - Add Time for Any date.
-
+### v2.0.4
+- Delete Logged time
 ## Support
 
 For issues and feature requests, please visit our GitHub repository.

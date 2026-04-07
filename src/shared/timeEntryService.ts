@@ -134,6 +134,45 @@ export class TimeEntryService {
     }
 
     /**
+     * Delete a specific daily log from a time entry
+     */
+    async deleteTimeLog(workItemId: number, userId: string, date: string, userName?: string): Promise<TimeEntry | null> {
+        const dataManager = await this.getDataManager();
+        const id = this.generateId(workItemId, userId);
+        const existingEntry = await this.getTimeEntry(id);
+        if (!existingEntry || !existingEntry.logs) return null;
+
+        const logIdx = existingEntry.logs.findIndex(l => l.date === date);
+        if (logIdx < 0) return null;
+
+        const deletedHours = existingEntry.logs[logIdx].hours;
+        existingEntry.logs.splice(logIdx, 1);
+
+        const now = new Date().toISOString();
+        const auditEntry: AuditLogEntry = {
+            timestamp: now,
+            userId,
+            userName: userName || userId,
+            action: 'deleted',
+            previousHours: deletedHours,
+            newHours: 0,
+            notes: `Deleted ${deletedHours}h logged on ${date}`
+        };
+        existingEntry.auditLog = existingEntry.auditLog || [];
+        existingEntry.auditLog.push(auditEntry);
+        existingEntry.updatedAt = now;
+
+        const existingEtag = (existingEntry as any).__etag;
+        const doc: any = { ...existingEntry };
+        if (existingEtag !== undefined) {
+            doc.__etag = existingEtag;
+        }
+
+        await dataManager.setDocument(COLLECTION_NAME, doc);
+        return existingEntry;
+    }
+
+    /**
      * Delete a time entry
      */
     async deleteTimeEntry(id: string): Promise<void> {
